@@ -1,0 +1,403 @@
+Notebook:
+
+Collection of runnable cells (commands). When you use a notebook, you are primarily developing
+& running cells.
+
+Supported:
+
+%scala
+%python
+%r
+%sql
+
+Additionally,
+
+%sh - to allow shell commands to be executed in NB.
+%fs - to allow to use dbutils filesystem commands.
+%md - allows to include various type of documentation, including text, images, mathematical formulas and equations
+
+=============================================
+
+spark-shell
+
+val df1 = spark.read.option("header","true")
+  .option("inferSchema","true").csv("D://Users//Anand//spark_projects//git//spark-olympics//athlete_events.csv")
+
+val df2 = df1.filter("Age > 25")
+
+df2.show()
+
+val df3 = df1.groupBy("Sport").count()
+
+df3.write.json("D://Users//Anand//spark_projects//git//spark-olympics//athlete_events_output.json")
+
+---------
+
+val df1 = spark.read.option("header","true")
+  .option("inferSchema","true").csv("D://Users//Anand//spark_projects//git//spark-olympics//athlete_events.csv")
+
+val df2 = df1.filter("Age > 25").groupBy("Sport")
+  .count().write.json("D://Users//Anand//spark_projects//git//spark-olympics//athlete_events_output.json")
+
+groupBy() - it will create more than 200 tasks as the param value
+spark.sql.shuffle.partitions = 200 by default
+
+so exit from spark-shell
+
+----------
+
+spark-shell --conf spark.sql.shuffle.partitions=3
+
+val df1 = spark.read
+  .option("header","true")
+  .option("inferSchema","true")
+  .csv("D://Users//Anand//spark_projects//git//spark-olympics//athlete_events.csv")
+
+val df2 = df1
+  .filter("Age > 25").groupBy("Sport")
+  .count()
+  .write.json("D://Users//Anand//spark_projects//git//spark-olympics//athlete_events_output.json")
+
+
+in the output directory, only 3 output files are created.
+
+scala> df1.explain(true)
+== Parsed Logical Plan ==
+Relation[ID#16,Name#17,Sex#18,Age#19,Height#20,Weight#21,Team#22,NOC#23,
+Games#24,Year#25,Season#26,City#27,Sport#28,Event#29,Medal#30] csv
+
+== Analyzed Logical Plan ==
+ID: int, Name: string, Sex: string, Age: string, Height: string,
+Weight: string, Team: string, NOC: string, Games: string, Year: string,
+Season: string, City: string, Sport: string, Event: string, Medal: string
+Relation[ID#16,Name#17,Sex#18,Age#19,Height#20,Weight#21,Team#22,NOC#23,
+Games#24,Year#25,Season#26,City#27,Sport#28,Event#29,Medal#30] csv
+
+== Optimized Logical Plan ==
+Relation[ID#16,Name#17,Sex#18,Age#19,Height#20,Weight#21,Team#22,NOC#23,
+Games#24,Year#25,Season#26,City#27,Sport#28,Event#29,Medal#30] csv
+
+== Physical Plan ==
+FileScan csv [ID#16,Name#17,Sex#18,Age#19,Height#20,Weight#21,Team#22,NOC#23,
+Games#24,Year#25,Season#26,City#27,Sport#28,Event#29,Medal#30] Batched: false,
+DataFilters: [], Format: CSV,
+Location: InMemoryFileIndex[file:/D:/Users/Anand/spark_projects/git/spark-olympics/athlete_events.csv],
+PartitionFilters: [], PushedFilters: [], ReadSchema: struct<ID:int,Name:string,Sex:string,Age:string,
+Height:string,Weight:string,Team:string,NOC:strin...
+
+
+
+-----------------
+
+val p = spark
+  .read
+  .option("header","true")
+  .option("inferSchema","true").csv("athlete_events.csv")
+
+scala> p.printSchema()
+root
+ |-- ID: integer (nullable = true)
+ |-- Name: string (nullable = true)
+ |-- Sex: string (nullable = true)
+ |-- Age: string (nullable = true)
+ |-- Height: string (nullable = true)
+ |-- Weight: string (nullable = true)
+ |-- Team: string (nullable = true)
+ |-- NOC: string (nullable = true)
+ |-- Games: string (nullable = true)
+ |-- Year: string (nullable = true)
+ |-- Season: string (nullable = true)
+ |-- City: string (nullable = true)
+ |-- Sport: string (nullable = true)
+ |-- Event: string (nullable = true)
+ |-- Medal: string (nullable = true)
+
+
+------------------------------------------------------------
+#######################
+Actual course commands
+#######################
+1. Loading data into dataframe
+
+%scala
+
+val athlete_events = sqlContext.read.format("csv")
+    .option("header", "true")
+    .option("inferSchema", "true")
+    .load("/FileStore/tables/athlete_events.csv")
+
+display(athlete_events)
+
+2. To print schema of dataframe
+
+%scala
+
+athlete_events.printSchema
+
+root
+ |-- ID: integer (nullable = true)
+ |-- Name: string (nullable = true)
+ |-- Sex: string (nullable = true)
+ |-- Age: string (nullable = true)
+ |-- Height: string (nullable = true)
+ |-- Weight: string (nullable = true)
+ |-- Team: string (nullable = true)
+ |-- NOC: string (nullable = true)
+ |-- Games: string (nullable = true)
+ |-- Year: string (nullable = true)
+ |-- Season: string (nullable = true)
+ |-- City: string (nullable = true)
+ |-- Sport: string (nullable = true)
+ |-- Event: string (nullable = true)
+ |-- Medal: string (nullable = true)
+
+
+3. Modifying String to Double Datatype of Dataframe
+
+%scala
+
+import spark.implicits._;
+import org.apache.spark.sql.types._;
+import org.apache.spark.sql.functions;
+
+val athlete_events_final = athlete_events.withColumn("ID",'ID.cast("Double"))
+                                         .withColumn("Age",'Age.cast("Double"))
+                                         .withColumn("Height",'Height.cast("Double"))
+                                         .withColumn("Weight",'Weight.cast("Double"))
+                                         .withColumn("Year",'Year.cast("Double"))
+
+
+athlete_events_final.printSchema
+
+|-- ID: double (nullable = true)
+|-- Name: string (nullable = true)
+|-- Sex: string (nullable = true)
+|-- Age: double (nullable = true)
+|-- Height: double (nullable = true)
+|-- Weight: double (nullable = true)
+|-- Team: string (nullable = true)
+|-- NOC: string (nullable = true)
+|-- Games: string (nullable = true)
+|-- Year: double (nullable = true)
+|-- Season: string (nullable = true)
+|-- City: string (nullable = true)
+|-- Sport: string (nullable = true)
+|-- Event: string (nullable = true)
+|-- Medal: string (nullable = true)
+
+
+4. Creating Temporary View from dataframe
+
+%scala
+athlete_events_final.createOrReplaceTempView("athlete_events_final")
+
+5. NOC Regions (Country codes) Dataframe Definition
+
+%scala
+
+val noc_regions = spark.read.format("csv")
+  .option("header", "true")
+  .option("inferSchema", "true")
+  .load("/FileStore/tables/noc_regions.csv")
+
+noc_regions.printSchema
+
+6. Creating Temporary View from dataframe
+
+%scala
+
+noc_regions.createOrReplaceTempView("noc_regions")
+
+Note: Please note that spark.sql and sql will work as we have created 2 Temporary views viz.
+noc_regions and athlete_events_final.
+
+That is why all the below examples work.
+
+7. Distribution of the age of gold medalists
+
+%sql
+
+select count(Medal) as Medals, Age from athlete_events_final where Medal = 'Gold' group by Age order by Age asc;
+
+%scala
+
+val gold_medalists_by_age = spark.sql("select Age, count(Medal) as medal_count from athlete_events_final
+where Medal = 'Gold' group by Age order by Age desc");
+
+display(gold_medalists_by_age)
+
+%scala
+import org.apache.spark.sql.functions._
+
+val gold_medalists_by_age = athlete_events_final
+  .filter(col("Medal")===("Gold"))
+  .select("Age", "Medal")
+  .groupBy("Age").agg(count("Medal").as("medal_count"))
+  .orderBy(col("Age").desc);
+
+display(gold_medalists_by_age)
+
+8. Gold Medals for atheles over 50 based on sports
+
+%sql
+
+select Sport, Age from athlete_events_final where Medal = 'Gold' and Age >= 50;
+
+%scala
+
+val sports_age_df = athlete_events_final
+  .filter(col("Age") >= 50 and col("Medal")==="Gold")
+  .select("Sport", "Age");
+
+display(sports_age_df)
+
+9. Women medals per edition (summer season) of the games
+
+select count(Medal) as Medals, Year from athlete_events_final where Sex = 'F'
+and Season = 'Summer' and Medal in ('Gold', 'Bronze', 'Silver') group by
+Year order by Year asc;
+
+%scala
+
+val female_medal_count_per_edition = athlete_events.filter(col("Sex") === 'F' and
+  col("Season") === "Summer"
+  and (col("Medal") isin ("Gold","Silver","Bronze")))
+  .select("Year", "Medal").groupBy("Year")
+  .agg(count("Medal").as("Medals"))
+  .orderBy(col("Year"))
+
+display(female_medal_count_per_edition)
+
+10. Top 5 medal countries
+
+noc_regions has the name of the country which is needed for this result
+
+%sql
+
+select count(Medal) as Medals, region from athlete_events_final A JOIN noc_regions N
+ON A.NOC = N.NOC
+where Medal = 'Gold' group by region order by Medals desc limit 5;
+
+%scala
+val top_gold_medals_countries_df = athlete_events_final
+  .select(athlete_events_final("Medal"), athlete_events_final("NOC"))
+  .join(noc_regions, athlete_events_final("NOC") === noc_regions("NOC"))
+  .filter(athlete_events_final("Medal") === "Gold")
+  .groupBy(noc_regions("region"))
+  .agg(count("Medal").as("Medals"))
+  .orderBy(col("Medals").desc)
+  .limit(5);
+
+display(top_gold_medals_countries_df)
+
+11. Disciplines with the greatest number of Gold Medals
+
+%sql
+
+select count(Medal) as Medals, Event from athlete_events_final A
+  JOIN noc_regions N ON A.NOC = N.NOC
+  where Medal = 'Gold'
+  and A.NOC = 'USA'
+  group by Event
+  order by Medals desc;
+
+  %scala
+
+  val top_disciplines_with_max_medals_df = athlete_events_final
+    .filter(col("Medal") === "Gold" and col("NOC") === "USA")
+    .select("Medal", "Event").groupBy("Event")
+    .agg(count("Medal").as("Medals"))
+    .orderBy(col("Medals").desc);
+
+  display(top_disciplines_with_max_medals_df)
+
+12. Height vs Weight of Olympic Medalists
+
+%sql
+
+select Weight, Height from athlete_events_final where  Medal = 'Gold';
+
+%scala
+import org.apache.spark.sql.types.{IntegerType}
+
+val athelete_height_weight_df = athlete_events_final
+  .filter(athlete_events_final("Medal") === "Gold")
+  .select(col("Weight").cast(IntegerType), col("Height").cast(IntegerType))
+
+display(athelete_height_weight_df)
+
+13. Variation of Male/Female Atheletes overtime
+
+Variation of Male Athletes over time
+
+%sql
+
+select count(Sex) as Males, Year from athlete_events_final
+  where Sex = 'M' and Season = 'Summer'
+  group by Year
+  order by Year asc;
+
+Variation of Female Athletes over time
+
+%sql
+
+select count(Sex) as Females, Year from athlete_events_final
+  where Sex = 'F' and Season = 'Summer'
+  group by Year
+  order by Year asc;
+
+14. Variation of Age for Male/Female Athletes over time
+
+Variation of Age for Male Athletes over time
+
+%sql
+
+select min(Age),mean(Age), max(Age), Year from athlete_events_final
+  where Sex = 'M' group by Year order by Year asc;
+
+Variation of Age for Male Athletes over time
+
+select min(Age),mean(Age), max(Age), Year from athlete_events_final
+  where Sex = 'F' group by Year order by Year asc;
+
+15. Variation of Height for Male/Female Athletes over time
+
+Variation of Height for Male Athletes over time
+
+select min(Height),mean(Height), max(Height), Year from athlete_events_final
+  where Sex = 'M' group by Year order by Year asc;
+
+Variation of Height for Female Athletes over time
+
+select min(Height),mean(Height), max(Height), Year from athlete_events_final
+  where Sex = 'F' group by Year order by Year asc;
+
+16. Weight over year for Male/Female Gymnasts
+
+Weight over year for Male Gymnasts
+
+select min(Weight),mean(Weight), max(Weight), Year from athlete_events_final
+  where Sport = 'Gymnastics' and Sex = 'M' and Year > 1950
+  group by Year
+  order by Year;
+
+Weight over year for female Gymnasts
+
+select min(Weight),mean(Weight), max(Weight), Year from athlete_events_final
+  where Sport = 'Gymnastics' and Sex = 'F' and Year > 1950
+  group by Year
+  order by Year;
+
+Height over year for Male Lifters
+
+select min(Height),mean(Height), max(Height), Year from athlete_events_final
+  where Sport = 'Weightlifting' and Sex = 'M' and Year > 1950
+  group by Year
+  order by Year;
+
+Height over year for Female Lifters
+
+select min(Height),mean(Height), max(Height), Year from athlete_events_final
+  where Sport = 'Weightlifting' and Sex = 'F' and Year > 1950
+  group by Year
+  order by Year;  
